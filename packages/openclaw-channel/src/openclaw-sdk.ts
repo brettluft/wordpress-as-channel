@@ -1,36 +1,182 @@
 /**
- * Local stub for the OpenClaw plugin SDK.
+ * Local stubs for the OpenClaw plugin SDK.
  *
- * The official `openclaw` package isn't published to npm yet.
- * This provides the `definePluginEntry` helper and the `PluginAPI`
- * type so the channel compiles standalone. Replace this with
- * `import { definePluginEntry } from 'openclaw/plugin-sdk'` once
- * the SDK is available on npm.
+ * Replace these imports with 'openclaw/plugin-sdk/core' once the SDK
+ * is published to npm. These stubs replicate the builder pattern the
+ * Gateway expects so the plugin compiles and runs standalone.
  */
 
-import type { ChannelPlugin } from './types.js';
+// ── Types ───────────────────────────────────────────────────────────────
 
-/** Minimal representation of the OpenClaw plugin API object. */
-export interface PluginAPI {
-  registerChannel(channel: ChannelPlugin): void;
-  registerTool?(tool: unknown): void;
-  registerHook?(name: string, handler: (...args: unknown[]) => void): void;
+/** Gateway configuration object passed to resolveAccount / inspectAccount. */
+export type OpenClawConfig = {
+  channels?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
+/** The resolved account returned by resolveAccount. */
+export interface ResolvedAccount {
+  accountId: string | null;
+  [key: string]: unknown;
 }
 
-export interface PluginEntry {
+/** Result of inspectAccount (read-only status check). */
+export interface InspectAccountResult {
+  enabled: boolean;
+  configured: boolean;
+  [key: string]: unknown;
+}
+
+/** Outbound send result. */
+export interface SendResult {
+  messageId?: string;
+  [key: string]: unknown;
+}
+
+/** Parameters for outbound text sending. */
+export interface SendTextParams {
+  to: string;
+  text: string;
+  threadTs?: string;
+  replyTo?: string;
+  [key: string]: unknown;
+}
+
+/** Parameters for outbound media sending. */
+export interface SendMediaParams {
+  to: string;
+  filePath: string;
+  [key: string]: unknown;
+}
+
+// ── Plugin API (passed to registerFull) ─────────────────────────────────
+
+export interface OpenClawPluginApi {
+  registrationMode: 'full' | 'setup';
+  registerCli?(descriptor: unknown, opts?: unknown): void;
+  registerHttpRoute?(route: unknown): void;
+  [key: string]: unknown;
+}
+
+// ── Builder inputs ──────────────────────────────────────────────────────
+
+export interface ChannelPluginBaseOptions<TAccount extends ResolvedAccount> {
+  id: string;
+  setup: {
+    resolveAccount(cfg: OpenClawConfig, accountId?: string | null): TAccount;
+    inspectAccount?(cfg: OpenClawConfig, accountId?: string | null): InspectAccountResult;
+  };
+}
+
+export interface ChatChannelPluginOptions<TAccount extends ResolvedAccount> {
+  base: ChatChannelPluginBase<TAccount>;
+
+  security?: {
+    dm?: {
+      channelKey: string;
+      resolvePolicy?: (account: TAccount) => string | undefined;
+      resolveAllowFrom?: (account: TAccount) => string[];
+      defaultPolicy?: string;
+    };
+  };
+
+  pairing?: {
+    text?: {
+      idLabel?: string;
+      message?: string;
+      notify?: (params: { target: string; code: string }) => Promise<void>;
+    };
+  };
+
+  threading?: {
+    topLevelReplyToMode?: 'reply' | 'new' | 'quote';
+  };
+
+  outbound?: {
+    attachedResults?: {
+      sendText?: (params: SendTextParams) => Promise<SendResult>;
+    };
+    base?: {
+      sendMedia?: (params: SendMediaParams) => Promise<void>;
+    };
+  };
+}
+
+// ── Built objects ───────────────────────────────────────────────────────
+
+export interface ChatChannelPluginBase<TAccount extends ResolvedAccount> {
+  id: string;
+  setup: ChannelPluginBaseOptions<TAccount>['setup'];
+}
+
+export interface ChatChannelPlugin<TAccount extends ResolvedAccount> {
+  id: string;
+  setup: ChannelPluginBaseOptions<TAccount>['setup'];
+  security: ChatChannelPluginOptions<TAccount>['security'];
+  pairing: ChatChannelPluginOptions<TAccount>['pairing'];
+  threading: ChatChannelPluginOptions<TAccount>['threading'];
+  outbound: ChatChannelPluginOptions<TAccount>['outbound'];
+  /** Internal marker for the Gateway to identify this as a channel plugin. */
+  __kind: 'chat-channel';
+}
+
+export interface ChannelPluginEntry<TAccount extends ResolvedAccount> {
   id: string;
   name: string;
-  version?: string;
-  register(api: PluginAPI): void;
+  description: string;
+  plugin: ChatChannelPlugin<TAccount>;
+  registerFull?: (api: OpenClawPluginApi) => void;
+}
+
+// ── Builders ────────────────────────────────────────────────────────────
+
+/**
+ * Create the base object for a channel plugin.
+ * Matches `createChannelPluginBase` from 'openclaw/plugin-sdk/core'.
+ */
+export function createChannelPluginBase<TAccount extends ResolvedAccount>(
+  opts: ChannelPluginBaseOptions<TAccount>,
+): ChatChannelPluginBase<TAccount> {
+  return {
+    id: opts.id,
+    setup: opts.setup,
+  };
 }
 
 /**
- * Define an OpenClaw plugin entry point.
- *
- * This is the same signature as the real SDK's `definePluginEntry`.
- * It simply returns the entry object — the Gateway calls `register(api)`
- * at startup.
+ * Assemble a complete chat channel plugin.
+ * Matches `createChatChannelPlugin` from 'openclaw/plugin-sdk/core'.
  */
-export function definePluginEntry(entry: PluginEntry): PluginEntry {
+export function createChatChannelPlugin<TAccount extends ResolvedAccount>(
+  opts: ChatChannelPluginOptions<TAccount>,
+): ChatChannelPlugin<TAccount> {
+  return {
+    id: opts.base.id,
+    setup: opts.base.setup,
+    security: opts.security,
+    pairing: opts.pairing,
+    threading: opts.threading,
+    outbound: opts.outbound,
+    __kind: 'chat-channel',
+  };
+}
+
+/**
+ * Define the full entry point for a channel plugin.
+ * Matches `defineChannelPluginEntry` from 'openclaw/plugin-sdk/core'.
+ */
+export function defineChannelPluginEntry<TAccount extends ResolvedAccount>(
+  entry: ChannelPluginEntry<TAccount>,
+): ChannelPluginEntry<TAccount> {
   return entry;
+}
+
+/**
+ * Define a lightweight setup-only entry point.
+ * Matches `defineSetupPluginEntry` from 'openclaw/plugin-sdk/core'.
+ */
+export function defineSetupPluginEntry<TAccount extends ResolvedAccount>(
+  plugin: ChatChannelPlugin<TAccount>,
+): { plugin: ChatChannelPlugin<TAccount> } {
+  return { plugin };
 }

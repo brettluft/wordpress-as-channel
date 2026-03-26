@@ -1,9 +1,19 @@
 {
   "name": "@wordpress-as-channel/openclaw-channel",
   "version": "0.1.0",
+  "type": "module",
   "description": "OpenClaw channel plugin that connects to WordPress 7.0's realtime collaboration system",
   "main": "wordpress-channel/index.js",
   "types": "wordpress-channel/index.d.ts",
+  "openclaw": {
+    "extensions": ["./wordpress-channel/index.js"],
+    "setupEntry": "./wordpress-channel/setup-entry.js",
+    "channel": {
+      "id": "wordpress",
+      "label": "WordPress",
+      "blurb": "Connect OpenClaw to WordPress 7.0 realtime collaborative editing."
+    }
+  },
   "scripts": {
     "build": "tsc && cp openclaw.plugin.json wordpress-channel/openclaw.plugin.json",
     "dev": "tsc --watch",

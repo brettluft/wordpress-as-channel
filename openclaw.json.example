@@ -7,23 +7,25 @@
       "groupPolicy": "allowlist",
       "debounceMs": 0,
       "mediaMaxMb": 50
+    },
+    "wordpress": {
+      "siteUrl": "https://your-wordpress-site.com",
+      "username": "claw-agent",
+      "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
+      "pollInterval": 2000,
+      "allowFrom": []
     }
   },
   "plugins": {
     "enabled": true,
+    "allow": ["wordpress-channel"],
     "load": {
       "paths": ["~/.openclaw/wordpress-as-channel/packages/openclaw-channel"]
     },
     "entries": {
-      "wordpress-channel": {
-        "enabled": true,
-        "config": {
-          "siteUrl": "https://your-wordpress-site.com",
-          "username": "claw-agent",
-          "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
-          "pollInterval": 2000
-        }
-      }
+      "whatsapp": { "enabled": true },
+      "discord": { "enabled": true },
+      "wordpress-channel": { "enabled": true }
     }
   }
 }

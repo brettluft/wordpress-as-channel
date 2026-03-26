@@ -1,36 +1,42 @@
 {
   "id": "wordpress-channel",
+  "kind": "channel",
+  "channels": ["wordpress"],
   "name": "WordPress Channel",
-  "version": "0.1.0",
   "description": "OpenClaw channel plugin that connects WordPress 7.0's realtime collaborative editor to the OpenClaw Gateway.",
-  "entry": "./index.js",
-  "type": "native",
-  "capabilities": ["channel"],
-  "channelId": "wordpress",
-  "author": "Automattic",
-  "license": "GPL-2.0-or-later",
   "configSchema": {
     "type": "object",
+    "additionalProperties": false,
     "properties": {
-      "siteUrl": {
-        "type": "string",
-        "description": "WordPress site URL (e.g. https://example.com)"
-      },
-      "username": {
-        "type": "string",
-        "description": "WordPress agent user login (e.g. claw-agent)"
-      },
-      "appPassword": {
-        "type": "string",
-        "description": "WordPress application password for the agent user"
-      },
-      "pollInterval": {
-        "type": "number",
-        "description": "Message polling interval in milliseconds",
-        "default": 2000
+      "wordpress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "siteUrl": {
+            "type": "string",
+            "description": "WordPress site URL (e.g. https://example.com)"
+          },
+          "username": {
+            "type": "string",
+            "description": "WordPress agent user login (e.g. claw-agent)"
+          },
+          "appPassword": {
+            "type": "string",
+            "description": "WordPress application password for the agent user"
+          },
+          "pollInterval": {
+            "type": "number",
+            "description": "Message polling interval in milliseconds",
+            "default": 2000
+          },
+          "allowFrom": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "WordPress user IDs or usernames allowed to interact with the agent"
+          }
+        },
+        "required": ["siteUrl", "username", "appPassword"]
       }
-    },
-    "required": ["siteUrl", "username", "appPassword"],
-    "additionalProperties": false
+    }
   }
 }

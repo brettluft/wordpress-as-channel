@@ -73,35 +73,25 @@ npm run build
 
 ### 3. Configure `openclaw.json`
 
-Add two things to your `openclaw.json`:
-
-**a) Channel config** — tells the Gateway how to connect to WordPress:
-
-```json
-{
-  "channels": {
-    "wordpress": {
-      "enabled": true,
-      "siteUrl": "https://your-wordpress-site.com",
-      "username": "claw-agent",
-      "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
-      "pollInterval": 2000
-    }
-  }
-}
-```
-
-**b) Plugin loading** — tells the Gateway where to find the channel module:
+Add the plugin to `openclaw.json`. Custom channels are registered as plugins — the config lives under `plugins.entries`, not `channels`:
 
 ```json
 {
   "plugins": {
     "enabled": true,
     "load": {
-      "paths": ["/absolute/path/to/packages/openclaw-channel"]
+      "paths": ["~/.openclaw/wordpress-as-channel/packages/openclaw-channel"]
     },
     "entries": {
-      "wordpress-channel": { "enabled": true }
+      "wordpress-channel": {
+        "enabled": true,
+        "config": {
+          "siteUrl": "https://your-wordpress-site.com",
+          "username": "claw-agent",
+          "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
+          "pollInterval": 2000
+        }
+      }
     }
   }
 }

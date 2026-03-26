@@ -12,7 +12,7 @@
   "plugins": {
     "enabled": true,
     "load": {
-      "paths": ["~/.openclaw/wordpress-as-channel/packages/openclaw-channel"]
+      "paths": ["~/.openclaw/wordpress-as-channel/packages/openclaw-channel/dist"]
     },
     "entries": {
       "wordpress-channel": {

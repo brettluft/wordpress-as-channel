@@ -164,11 +164,29 @@ export function createChatChannelPlugin<TAccount extends ResolvedAccount>(
 /**
  * Define the full entry point for a channel plugin.
  * Matches `defineChannelPluginEntry` from 'openclaw/plugin-sdk/core'.
+ *
+ * The Gateway looks for a `register` or `activate` function on the
+ * default export. This wrapper adds both so the Gateway can call
+ * either one to initialize the plugin.
  */
 export function defineChannelPluginEntry<TAccount extends ResolvedAccount>(
   entry: ChannelPluginEntry<TAccount>,
-): ChannelPluginEntry<TAccount> {
-  return entry;
+): ChannelPluginEntry<TAccount> & {
+  register: (api: OpenClawPluginApi) => void;
+  activate: (api: OpenClawPluginApi) => void;
+} {
+  const register = (api: OpenClawPluginApi) => {
+    // Call the user's registerFull if provided
+    if (entry.registerFull && api.registrationMode === 'full') {
+      entry.registerFull(api);
+    }
+  };
+
+  return {
+    ...entry,
+    register,
+    activate: register,
+  };
 }
 
 /**

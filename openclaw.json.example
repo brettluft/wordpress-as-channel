@@ -1,0 +1,24 @@
+{
+  "channels": {
+    "wordpress": {
+      "enabled": true,
+      "siteUrl": "https://your-wordpress-site.com",
+      "username": "claw-agent",
+      "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
+      "pollInterval": 2000
+    }
+  },
+  "plugins": {
+    "enabled": true,
+    "load": {
+      "paths": [
+        "~/path/to/wordpress-as-channel/packages/openclaw-channel"
+      ]
+    },
+    "entries": {
+      "wordpress-channel": {
+        "enabled": true
+      }
+    }
+  }
+}

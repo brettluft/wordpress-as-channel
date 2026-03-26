@@ -63,7 +63,7 @@ Retrieve the app password from WP options:
 wp option get claw_agent_app_password
 ```
 
-### 2. Configure the OpenClaw Channel
+### 2. Build the OpenClaw Channel Plugin
 
 ```bash
 cd packages/openclaw-channel
@@ -71,44 +71,58 @@ npm install
 npm run build
 ```
 
-Add the channel to your OpenClaw Gateway configuration:
+### 3. Configure `openclaw.json`
 
-```yaml
-# ~/.openclaw/config.yaml
-channels:
-  - id: wordpress
-    module: /path/to/packages/openclaw-channel/dist/index.js
-    config:
-      siteUrl: https://your-wordpress-site.com
-      username: claw-agent
-      appPassword: "xxxx xxxx xxxx xxxx xxxx xxxx"
-      pollInterval: 2000
+Add two things to your `openclaw.json`:
+
+**a) Channel config** — tells the Gateway how to connect to WordPress:
+
+```json
+{
+  "channels": {
+    "wordpress": {
+      "enabled": true,
+      "siteUrl": "https://your-wordpress-site.com",
+      "username": "claw-agent",
+      "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
+      "pollInterval": 2000
+    }
+  }
+}
 ```
 
-### 3. Register the Agent Skills
+**b) Plugin loading** — tells the Gateway where to find the channel module:
+
+```json
+{
+  "plugins": {
+    "enabled": true,
+    "load": {
+      "paths": ["/absolute/path/to/packages/openclaw-channel"]
+    },
+    "entries": {
+      "wordpress-channel": { "enabled": true }
+    }
+  }
+}
+```
+
+See `openclaw.json.example` in the repo root for a complete example.
+
+### 4. Installing on a Different Machine
 
 ```bash
-cd packages/agent-skills
-npm install
-npm run build
+git clone <repo-url> wordpress-as-channel
+cd wordpress-as-channel
+npm install && npm run build
 ```
 
-The skills are available as importable functions for use in your OpenClaw agent configuration.
+Then add the absolute path to `plugins.load.paths` in your `openclaw.json` and add the `channels.wordpress` config with the app password from step 1.
 
-### 4. Bind the Agent
+Alternatively, symlink the built channel into `~/.openclaw/extensions/` for auto-discovery:
 
-In your OpenClaw agent bindings, point to the WordPress channel:
-
-```yaml
-agents:
-  - id: wordpress-editor
-    channels:
-      - wordpress
-    skills:
-      - wp-read-content
-      - wp-suggest-edit
-      - wp-search-posts
-      - wp-insert-link
+```bash
+ln -s /path/to/packages/openclaw-channel ~/.openclaw/extensions/wordpress-channel
 ```
 
 ## Usage

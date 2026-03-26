@@ -1,12 +1,17 @@
 /**
  * OpenClaw Channel Plugin — WordPress
  *
- * This is the main entry point loaded by the OpenClaw Gateway.
- * It exports the channel plugin definition and all public types.
+ * Native OpenClaw plugin that registers WordPress as a channel.
+ * The Gateway loads this via `definePluginEntry` and calls
+ * `api.registerChannel()` to wire up the WordPress bridge.
+ *
+ * @see https://docs.openclaw.ai/tools/plugin
  */
 
+import { definePluginEntry } from 'openclaw/plugin-sdk';
 import { WordPressChannel } from './channel.js';
-import type { ChannelPlugin } from './types.js';
+
+// ── Re-exports for programmatic use ────────────────────────────────────────
 
 export { WordPressChannel } from './channel.js';
 export type { WordPressChannelConfig } from './channel.js';
@@ -26,11 +31,16 @@ export type {
   ChannelPlugin,
 } from './types.js';
 
-/**
- * The channel plugin definition that the OpenClaw Gateway loads.
- * Gateway calls `channel.start(config, emit)` to boot the channel,
- * then routes commands via `channel.handleCommand(cmd)`.
- */
-const channel: ChannelPlugin = new WordPressChannel();
+// ── Plugin entry ───────────────────────────────────────────────────────────
 
-export default channel;
+export default definePluginEntry({
+  id: 'wordpress-channel',
+  name: 'WordPress Channel',
+  version: '0.1.0',
+
+  register(api) {
+    // Register WordPress as a channel — the Gateway reads channel config
+    // from openclaw.json `channels.wordpress` and passes it to start().
+    api.registerChannel(new WordPressChannel());
+  },
+});

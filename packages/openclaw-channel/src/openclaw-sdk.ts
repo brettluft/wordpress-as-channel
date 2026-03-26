@@ -177,10 +177,29 @@ export function defineChannelPluginEntry<TAccount extends ResolvedAccount>(
   activate: (api: OpenClawPluginApi) => void;
 } {
   const register = (api: OpenClawPluginApi) => {
+    // Debug: log what the Gateway gives us and what it expects
+    console.log('[wordpress-channel] register() called');
+    console.log('[wordpress-channel] api keys:', Object.keys(api).sort().join(', '));
+    console.log('[wordpress-channel] api.registrationMode:', api.registrationMode);
+    console.log('[wordpress-channel] plugin keys:', Object.keys(entry.plugin).sort().join(', '));
+
     // Register the channel plugin with the Gateway.
-    // The Gateway looks for registerChannel on the api object.
     if (typeof api.registerChannel === 'function') {
-      api.registerChannel(entry.plugin);
+      console.log('[wordpress-channel] calling api.registerChannel()');
+      try {
+        api.registerChannel(entry.plugin);
+        console.log('[wordpress-channel] registerChannel succeeded');
+      } catch (err) {
+        console.error('[wordpress-channel] registerChannel threw:', err);
+      }
+    } else {
+      console.log('[wordpress-channel] api.registerChannel not available');
+      // Try other registration methods
+      for (const key of Object.keys(api)) {
+        if (key.toLowerCase().includes('register') || key.toLowerCase().includes('channel')) {
+          console.log(`[wordpress-channel] api.${key}:`, typeof (api as Record<string, unknown>)[key]);
+        }
+      }
     }
 
     // Call the user's registerFull if provided

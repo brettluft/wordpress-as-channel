@@ -8,7 +8,8 @@
  * @see https://docs.openclaw.ai/tools/plugin
  */
 
-import { definePluginEntry } from 'openclaw/plugin-sdk';
+// Local SDK stub — replace with 'openclaw/plugin-sdk' once published to npm.
+import { definePluginEntry } from './openclaw-sdk.js';
 import { WordPressChannel } from './channel.js';
 
 // ── Re-exports for programmatic use ────────────────────────────────────────

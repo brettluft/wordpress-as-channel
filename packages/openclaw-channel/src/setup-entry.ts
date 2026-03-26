@@ -3,7 +3,7 @@
  * or unconfigured, avoiding heavyweight dependencies (Yjs, WPClient).
  */
 
-import { defineSetupPluginEntry } from './openclaw-sdk.js';
+import { defineSetupPluginEntry } from 'openclaw/plugin-sdk/core';
 import { wordpressPlugin } from './plugin.js';
 
 export default defineSetupPluginEntry(wordpressPlugin);

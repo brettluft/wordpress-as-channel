@@ -2,7 +2,7 @@
  * WordPress channel plugin — built with createChatChannelPlugin.
  *
  * This follows the OpenClaw channel plugin contract:
- *   resolveAccount → reads credentials from config.channels.wordpress
+ *   config.resolveAccount → reads credentials from config.channels.wordpress
  *   outbound.sendText → writes agent messages to WP post meta
  *   security/pairing/threading → minimal defaults for MVP
  *
@@ -10,21 +10,18 @@
  * or can be kicked off externally.
  */
 
+// Import the real SDK builders.
 import {
   createChatChannelPlugin,
   createChannelPluginBase,
-  type OpenClawConfig,
-  type ResolvedAccount,
-  type InspectAccountResult,
-  type SendTextParams,
-  type SendResult,
-} from './openclaw-sdk.js';
+} from 'openclaw/plugin-sdk/core';
+import type { ChannelSetupAdapter } from 'openclaw/plugin-sdk';
 import { WPClient } from './wp-client.js';
-import type { PostChatMessages, ChatMessage } from './types.js';
+import type { ChatMessage } from './types.js';
 
 // ── Account type ────────────────────────────────────────────────────────
 
-export interface WordPressAccount extends ResolvedAccount {
+export interface WordPressAccount {
   accountId: string | null;
   siteUrl: string;
   username: string;
@@ -36,13 +33,13 @@ export interface WordPressAccount extends ResolvedAccount {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-function getSection(cfg: OpenClawConfig): Record<string, unknown> | undefined {
+function getSection(cfg: any): Record<string, unknown> | undefined {
   const channels = cfg.channels as Record<string, Record<string, unknown>> | undefined;
   return channels?.['wordpress'];
 }
 
 function resolveAccount(
-  cfg: OpenClawConfig,
+  cfg: any,
   accountId?: string | null,
 ): WordPressAccount {
   const section = getSection(cfg);
@@ -65,20 +62,18 @@ function resolveAccount(
   };
 }
 
-function inspectAccount(
-  cfg: OpenClawConfig,
-  _accountId?: string | null,
-): InspectAccountResult {
-  const section = getSection(cfg);
-  const hasCreds = Boolean(section?.['siteUrl'] && section?.['username'] && section?.['appPassword']);
-  return {
-    enabled: hasCreds,
-    configured: hasCreds,
-    siteUrl: section?.['siteUrl'] ?? null,
-    username: section?.['username'] ?? null,
-    tokenStatus: hasCreds ? 'available' : 'missing',
-  };
-}
+// ── Setup adapter (ChannelSetupAdapter) ─────────────────────────────────
+
+const setupAdapter: ChannelSetupAdapter = {
+  resolveAccountId: ({ accountId }) => {
+    // For WordPress we use a single default account.
+    return accountId ?? 'default';
+  },
+  applyAccountConfig: ({ cfg }) => {
+    // No-op: WordPress config is applied externally via config file.
+    return cfg;
+  },
+};
 
 // ── Outbound messaging ──────────────────────────────────────────────────
 
@@ -99,27 +94,35 @@ function getClient(account: WordPressAccount): WPClient {
   return client;
 }
 
-async function sendText(params: SendTextParams): Promise<SendResult> {
-  // `params.to` is the post ID (as a string) — the "thread" in WordPress terms
-  const postId = parseInt(params.to, 10);
+/**
+ * Send a text message to a WordPress post thread.
+ *
+ * The ctx parameter matches ChannelOutboundContext from the SDK:
+ *   { cfg, to, text, accountId?, ... }
+ *
+ * Returns Omit<OutboundDeliveryResult, 'channel'> = { messageId: string, ... }
+ */
+async function sendText(ctx: {
+  cfg: any;
+  to: string;
+  text: string;
+  accountId?: string | null;
+}): Promise<{ messageId: string }> {
+  // `ctx.to` is the post ID (as a string) — the "thread" in WordPress terms
+  const postId = parseInt(ctx.to, 10);
   if (isNaN(postId)) {
-    throw new Error(`wordpress: invalid post ID "${params.to}"`);
+    throw new Error(`wordpress: invalid post ID "${ctx.to}"`);
   }
 
-  // We need the account to get the WP client. The account is stashed on
-  // the params object by the Gateway as `params.__account`.
-  const account = (params as Record<string, unknown>)['__account'] as WordPressAccount | undefined;
-  if (!account) {
-    throw new Error('wordpress: no account context in sendText params');
-  }
-
+  // Resolve the account from the config to get the WP client.
+  const account = resolveAccount(ctx.cfg, ctx.accountId);
   const client = getClient(account);
   const messages = await client.getChatMessages(postId);
 
   const agentMessage: ChatMessage = {
     id: `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     author: account.username,
-    content: params.text,
+    content: ctx.text,
     timestamp: new Date().toISOString(),
     type: 'message',
   };
@@ -132,19 +135,48 @@ async function sendText(params: SendTextParams): Promise<SendResult> {
 
 // ── Plugin assembly ─────────────────────────────────────────────────────
 
-export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
-  base: createChannelPluginBase<WordPressAccount>({
+const pluginBase = createChannelPluginBase<WordPressAccount>({
+  id: 'wordpress',
+  meta: {
     id: 'wordpress',
-    setup: {
-      resolveAccount,
-      inspectAccount,
+    label: 'WordPress',
+    selectionLabel: 'WordPress',
+    docsPath: '/plugins/wordpress-channel',
+    blurb: 'Connect OpenClaw to WordPress 7.0 collaborative editing.',
+  },
+  capabilities: {
+    chatTypes: ['direct'],
+  },
+  config: {
+    listAccountIds: (cfg) => {
+      const section = getSection(cfg);
+      return section ? ['default'] : [];
     },
-  }),
+    resolveAccount,
+    inspectAccount: (cfg, accountId) => {
+      const section = getSection(cfg);
+      const hasCreds = Boolean(section?.['siteUrl'] && section?.['username'] && section?.['appPassword']);
+      return {
+        enabled: hasCreds,
+        configured: hasCreds,
+        siteUrl: section?.['siteUrl'] ?? null,
+        username: section?.['username'] ?? null,
+        tokenStatus: hasCreds ? 'available' : 'missing',
+      };
+    },
+  },
+  setup: setupAdapter,
+});
+
+export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
+  // The base builder marks some required ChannelPlugin fields as optional in
+  // its return type, but we always provide them above, so this assertion is safe.
+  base: pluginBase as any,
 
   security: {
     dm: {
       channelKey: 'wordpress',
-      resolvePolicy: (account) => account.dmPolicy,
+      resolvePolicy: (account) => account.dmPolicy ?? null,
       resolveAllowFrom: (account) => account.allowFrom,
       defaultPolicy: 'allowlist',
     },
@@ -154,10 +186,10 @@ export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
     text: {
       idLabel: 'WordPress username',
       message: 'Send this code in the Claw Agent sidebar to verify:',
-      notify: async ({ target, code }) => {
+      notify: async ({ cfg, id, message }) => {
         // For MVP, pairing isn't really needed since the agent
         // authenticates via app password. Log for debugging.
-        console.log(`[wordpress] Pairing code for ${target}: ${code}`);
+        console.log(`[wordpress] Pairing notification for ${id}: ${message}`);
       },
     },
   },
@@ -165,7 +197,11 @@ export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
   threading: { topLevelReplyToMode: 'reply' },
 
   outbound: {
+    base: {
+      deliveryMode: 'direct',
+    },
     attachedResults: {
+      channel: 'wordpress',
       sendText,
     },
   },

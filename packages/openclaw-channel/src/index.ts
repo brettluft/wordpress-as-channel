@@ -1,13 +1,13 @@
 /**
  * OpenClaw Channel Plugin — WordPress
  *
- * Entry point loaded by the OpenClaw Gateway. Uses defineChannelPluginEntry
- * to register the WordPress channel with the Gateway's plugin system.
+ * Entry point loaded by the OpenClaw Gateway. Uses the real SDK's
+ * defineChannelPluginEntry to register the WordPress channel.
  *
  * @see https://docs.openclaw.ai/plugins/sdk-channel-plugins
  */
 
-import { defineChannelPluginEntry } from './openclaw-sdk.js';
+import { defineChannelPluginEntry } from 'openclaw/plugin-sdk/core';
 import { wordpressPlugin } from './plugin.js';
 
 // ── Re-exports for programmatic use ────────────────────────────────────

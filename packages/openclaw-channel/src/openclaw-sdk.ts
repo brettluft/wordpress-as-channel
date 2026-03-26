@@ -53,6 +53,7 @@ export interface SendMediaParams {
 
 export interface OpenClawPluginApi {
   registrationMode: 'full' | 'setup';
+  registerChannel?(plugin: unknown): void;
   registerCli?(descriptor: unknown, opts?: unknown): void;
   registerHttpRoute?(route: unknown): void;
   [key: string]: unknown;
@@ -176,6 +177,12 @@ export function defineChannelPluginEntry<TAccount extends ResolvedAccount>(
   activate: (api: OpenClawPluginApi) => void;
 } {
   const register = (api: OpenClawPluginApi) => {
+    // Register the channel plugin with the Gateway.
+    // The Gateway looks for registerChannel on the api object.
+    if (typeof api.registerChannel === 'function') {
+      api.registerChannel(entry.plugin);
+    }
+
     // Call the user's registerFull if provided
     if (entry.registerFull && api.registrationMode === 'full') {
       entry.registerFull(api);

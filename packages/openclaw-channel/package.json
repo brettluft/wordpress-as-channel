@@ -2,12 +2,12 @@
   "name": "@wordpress-as-channel/openclaw-channel",
   "version": "0.1.0",
   "description": "OpenClaw channel plugin that connects to WordPress 7.0's realtime collaboration system",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "wordpress-channel/index.js",
+  "types": "wordpress-channel/index.d.ts",
   "scripts": {
-    "build": "tsc && cp openclaw.plugin.json dist/openclaw.plugin.json",
+    "build": "tsc && cp openclaw.plugin.json wordpress-channel/openclaw.plugin.json",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf wordpress-channel"
   },
   "dependencies": {
     "ws": "^8.18.0",

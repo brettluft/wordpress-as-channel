@@ -80,7 +80,7 @@ Add the plugin to `openclaw.json`. Custom channels are registered as plugins —
   "plugins": {
     "enabled": true,
     "load": {
-      "paths": ["~/.openclaw/wordpress-as-channel/packages/openclaw-channel/dist"]
+      "paths": ["~/.openclaw/wordpress-as-channel/packages/openclaw-channel"]
     },
     "entries": {
       "wordpress-channel": {

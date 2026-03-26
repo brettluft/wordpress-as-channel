@@ -1,0 +1,11 @@
+{
+  "id": "wordpress-channel",
+  "name": "WordPress Channel",
+  "version": "0.1.0",
+  "description": "OpenClaw channel plugin that connects WordPress 7.0's realtime collaborative editor to the OpenClaw Gateway.",
+  "entry": "dist/index.js",
+  "type": "native",
+  "capabilities": ["channel"],
+  "author": "Automattic",
+  "license": "GPL-2.0-or-later"
+}

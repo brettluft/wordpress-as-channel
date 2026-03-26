@@ -1,0 +1,23 @@
+{
+	"name": "@wordpress-as-channel/wordpress-plugin",
+	"version": "0.1.0",
+	"description": "Claw Agent Collab — realtime AI agent collaboration in the WordPress block editor",
+	"private": true,
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"lint:js": "wp-scripts lint-js src",
+		"lint:css": "wp-scripts lint-style src"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.0.0"
+	},
+	"dependencies": {
+		"@wordpress/components": "^28.0.0",
+		"@wordpress/data": "^10.0.0",
+		"@wordpress/element": "^6.0.0",
+		"@wordpress/plugins": "^7.0.0",
+		"@wordpress/icons": "^10.0.0",
+		"@wordpress/i18n": "^5.0.0"
+	}
+}

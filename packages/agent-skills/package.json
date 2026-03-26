@@ -1,0 +1,26 @@
+{
+  "name": "@wordpress-as-channel/agent-skills",
+  "version": "0.1.0",
+  "description": "OpenClaw agent skills for WordPress content interaction",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "GPL-2.0-or-later",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

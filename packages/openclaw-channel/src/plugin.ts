@@ -11,11 +11,8 @@
  */
 
 // Import the real SDK builders.
-import {
-  createChatChannelPlugin,
-  createChannelPluginBase,
-} from 'openclaw/plugin-sdk/core';
-import type { ChannelSetupAdapter } from 'openclaw/plugin-sdk';
+import { createChatChannelPlugin } from 'openclaw/plugin-sdk/core';
+import type { ChannelSetupAdapter } from 'openclaw/plugin-sdk/channels';
 import { WPClient } from './wp-client.js';
 import type { ChatMessage } from './types.js';
 
@@ -61,19 +58,6 @@ function resolveAccount(
     dmPolicy: section?.['dmPolicy'] as string | undefined,
   };
 }
-
-// ── Setup adapter (ChannelSetupAdapter) ─────────────────────────────────
-
-const setupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: ({ accountId }) => {
-    // For WordPress we use a single default account.
-    return accountId ?? 'default';
-  },
-  applyAccountConfig: ({ cfg }) => {
-    // No-op: WordPress config is applied externally via config file.
-    return cfg;
-  },
-};
 
 // ── Outbound messaging ──────────────────────────────────────────────────
 
@@ -135,24 +119,21 @@ async function sendText(ctx: {
 
 // ── Plugin assembly ─────────────────────────────────────────────────────
 
-const pluginBase = createChannelPluginBase<WordPressAccount>({
+export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
   id: 'wordpress',
-  meta: {
-    id: 'wordpress',
-    label: 'WordPress',
-    selectionLabel: 'WordPress',
-    docsPath: '/plugins/wordpress-channel',
-    blurb: 'Connect OpenClaw to WordPress 7.0 collaborative editing.',
-  },
+  label: 'WordPress',
+  blurb: 'Connect OpenClaw to WordPress 7.0 collaborative editing.',
+  
   capabilities: {
     chatTypes: ['direct'],
   },
-  config: {
+
+  setup: {
+    resolveAccount,
     listAccountIds: (cfg) => {
       const section = getSection(cfg);
       return section ? ['default'] : [];
     },
-    resolveAccount,
     inspectAccount: (cfg, accountId) => {
       const section = getSection(cfg);
       const hasCreds = Boolean(section?.['siteUrl'] && section?.['username'] && section?.['appPassword']);
@@ -162,16 +143,9 @@ const pluginBase = createChannelPluginBase<WordPressAccount>({
         siteUrl: section?.['siteUrl'] ?? null,
         username: section?.['username'] ?? null,
         tokenStatus: hasCreds ? 'available' : 'missing',
-      };
+      } as any;
     },
   },
-  setup: setupAdapter,
-});
-
-export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
-  // The base builder marks some required ChannelPlugin fields as optional in
-  // its return type, but we always provide them above, so this assertion is safe.
-  base: pluginBase as any,
 
   security: {
     dm: {
@@ -194,7 +168,7 @@ export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
     },
   },
 
-  threading: { topLevelReplyToMode: 'reply' },
+  threading: { topLevelReplyToMode: 'reply' } as any,
 
   outbound: {
     base: {

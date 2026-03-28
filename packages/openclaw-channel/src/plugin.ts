@@ -11,8 +11,10 @@
  */
 
 // Import the real SDK builders.
-import { createChatChannelPlugin } from 'openclaw/plugin-sdk/core';
-import type { ChannelSetupAdapter } from 'openclaw/plugin-sdk/channels';
+import {
+  createChatChannelPlugin,
+  createChannelPluginBase,
+} from 'openclaw/plugin-sdk/core';
 import { WPClient } from './wp-client.js';
 import type { ChatMessage } from './types.js';
 
@@ -119,22 +121,25 @@ async function sendText(ctx: {
 
 // ── Plugin assembly ─────────────────────────────────────────────────────
 
-export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
+const pluginBase = createChannelPluginBase<WordPressAccount>({
   id: 'wordpress',
-  label: 'WordPress',
-  blurb: 'Connect OpenClaw to WordPress 7.0 collaborative editing.',
-  
+  meta: {
+    id: 'wordpress',
+    label: 'WordPress',
+    selectionLabel: 'WordPress',
+    docsPath: '/plugins/wordpress-channel',
+    blurb: 'Connect OpenClaw to WordPress 7.0 collaborative editing.',
+  },
   capabilities: {
     chatTypes: ['direct'],
   },
-
-  setup: {
-    resolveAccount,
-    listAccountIds: (cfg) => {
+  config: {
+    listAccountIds: (cfg: any) => {
       const section = getSection(cfg);
       return section ? ['default'] : [];
     },
-    inspectAccount: (cfg, accountId) => {
+    resolveAccount,
+    inspectAccount: (cfg: any, accountId?: string | null) => {
       const section = getSection(cfg);
       const hasCreds = Boolean(section?.['siteUrl'] && section?.['username'] && section?.['appPassword']);
       return {
@@ -143,9 +148,19 @@ export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
         siteUrl: section?.['siteUrl'] ?? null,
         username: section?.['username'] ?? null,
         tokenStatus: hasCreds ? 'available' : 'missing',
-      } as any;
+      };
     },
   },
+  setup: {
+    resolveAccountId: ({ accountId }) => accountId ?? 'default',
+    applyAccountConfig: ({ cfg }) => cfg,
+  },
+});
+
+export const wordpressPlugin = createChatChannelPlugin<WordPressAccount>({
+  // The base builder marks some required ChannelPlugin fields as optional in
+  // its return type, but we always provide them above, so this assertion is safe.
+  base: pluginBase as any,
 
   security: {
     dm: {
